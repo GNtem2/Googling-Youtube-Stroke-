@@ -15,5 +15,6 @@
 #60 views #0 Comments
 #https://www.youtube.com/watch?v=YHzz2cXBlGk #2006 stroke heroes long version
 ###
+#access youtube via SocialMediaLab package R
 #view at
 https://gntem2.github.io/Googling-Youtube-Stroke-/
