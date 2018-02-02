@@ -14,3 +14,6 @@
 #https://www.youtube.com/watch?v=xA-P5voEik8 #2015
 #60 views #0 Comments
 #https://www.youtube.com/watch?v=YHzz2cXBlGk #2006 stroke heroes long version
+###
+#view at
+https://gntem2.github.io/Googling-Youtube-Stroke-/
