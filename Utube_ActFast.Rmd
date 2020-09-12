@@ -1,0 +1,245 @@
+---
+title: "Utube_ActFast"
+author: "gntem2"
+date: "2 February 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+
+```{r prepare data}
+#library(SocialMediaLab)
+library(magrittr)
+
+library(tm)
+library(tidytext)
+library(stringr)
+
+
+#extract
+#NSF campaign
+#https://www.youtube.com/watch?v=xK1Qf0MTIRU #2009 
+#1,645 views #1 comment
+#Very helpful.  I feel much more aware of how to recognise a stroke.  Thanks!
+#https://www.youtube.com/watch?v=RBaMgsSKzCc #2010
+#7,946 views #0 Comments
+#https://www.youtube.com/watch?v=MmoGeCXovJ8 #2011
+#4,755 views # 0 comments
+#Everyone needs to know this. 
+#https://www.youtube.com/watch?v=27pbdKLOHNU #2013
+#479 views #0 Comments
+#https://www.youtube.com/watch?v=xA-P5voEik8 #2015
+#60 views #0 Comments
+#https://www.youtube.com/watch?v=YHzz2cXBlGk #2006 stroke heroes long version
+
+####
+#https://twitter.com/actfast999 UKtwitter
+
+
+######
+#videoIDs<-c("YHzz2cXBlGk") #123 comments #406,253 views 2/2/18
+
+#extract
+#g_youtube_actor <- Authenticate("youtube", apiKey= apiKey) %>%
+#  Collect(videoIDs = videoIDs, writeToFile=TRUE) %>%
+#  Create("Actor")
+```
+
+```{r data}
+#output of socialmedialab
+df<-read.csv("Feb_01_1_49_59 PM_2018_AEDT_YoutubeData.csv",stringsAsFactors = FALSE)
+
+toRemove <- which(df$Comment=="")
+
+if (isTRUE(length(toRemove)!=0)) {
+  df <- df[-toRemove,]
+}
+
+keywords <- df$Comment 
+keywords <- iconv(keywords, to = 'utf-8')
+myCorpus <- VCorpus(VectorSource(keywords))
+myCorpus <- tm_map(myCorpus, content_transformer(tolower))
+myCorpus <- tm_map(myCorpus, removeNumbers)
+myCorpus <- tm_map(myCorpus, removePunctuation)
+myCorpus <- tm_map(myCorpus, removeWords, stopwords("english"),lazy=TRUE) 
+myCorpus <- tm_map(myCorpus, stripWhitespace, lazy=TRUE)
+dtm <- DocumentTermMatrix(myCorpus,control = list(wordLengths=c(3, 20)))
+dtm<-removeSparseTerms(dtm, 0.95)
+
+tdm=TermDocumentMatrix(myCorpus,control = list(minWordLength=3,maxWordLength=20) )
+
+inspect(dtm[1:5,5:10])
+
+```
+#matrix conversion
+
+```{r matrix}
+#convert to matrix
+m <- as.matrix(tdm)
+v <- sort(rowSums(m),decreasing=TRUE)
+d <- data.frame(word = names(v),freq=v)
+
+write.csv(m,file="youtube_strokeheroes.csv") #write to Document directory
+head(d, 10)
+barplot(d[1:20,]$freq, las = 2, names.arg = d[1:20,]$word,
+        col ="lightblue", main ="Most frequent words",
+        ylab = "Word frequencies")
+
+#word cloud
+library(wordcloud)
+set.seed(1234)
+wordcloud(words = d$word, freq = d$freq, min.freq = 1,
+          max.words=100, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+
+```
+
+#sentiment analyis
+
+```{r sentiment analysis}
+library(syuzhet)
+#base on unigram 
+#nrc
+my_example_text=keywords
+s_v <- get_sentences(my_example_text)
+class(s_v)
+str(s_v)
+head(s_v) 
+sentiment_vector <- get_sentiment(s_v, method="bing")
+sentiment_vector
+afinn_vector <- get_sentiment(s_v, method="afinn")
+afinn_vector
+nrc_vector <- get_sentiment(s_v, method="nrc")
+nrc_vector
+
+sum(sentiment_vector)
+mean(sentiment_vector)
+summary(sentiment_vector)
+
+#anger
+nrc_data <- get_nrc_sentiment(s_v)
+angry_items <- which(nrc_data$anger > 0)
+
+#joy
+joy_items <- which(nrc_data$joy > 0)
+s_v[joy_items]
+
+#disgust
+disgust_items <- which(nrc_data$disgust > 0)
+s_v[disgust_items]
+
+#fear
+fear_items <- which(nrc_data$fear > 0)
+s_v[fear_items]
+
+#sadness
+sadness_items <- which(nrc_data$sadness > 0)
+s_v[sadness_items]
+
+#trust
+trust_items <- which(nrc_data$trust > 0)
+s_v[trust_items]
+
+#surprise
+surprise_items <- which(nrc_data$surprise > 0)
+s_v[surprise_items]
+
+#positive
+positive_items <- which(nrc_data$positive > 0)
+s_v[positive_items]
+
+#negative
+negative_items <- which(nrc_data$negative > 0)
+s_v[negative_items]
+
+
+sum(nrc_data$trust)/dim(nrc_data)[1]
+sum(nrc_data$anticipation)/dim(nrc_data)[1]
+sum(nrc_data$disgust)/dim(nrc_data)[1]
+sum(nrc_data$anger)/dim(nrc_data)[1]
+sum(nrc_data$fear)/dim(nrc_data)[1]
+sum(nrc_data$joy)/dim(nrc_data)[1]
+sum(nrc_data$sadness)/dim(nrc_data)[1]
+sum(nrc_data$surprise)/dim(nrc_data)[1]
+sum(nrc_data$positive)/dim(nrc_data)[1]
+sum(nrc_data$negative)/dim(nrc_data)[1]
+
+
+#pander::pandoc.table(nrc_data[, 1:8])
+#pander::pandoc.table(nrc_data[, 9:10])
+
+valence <- (nrc_data[, 9]*-1) + nrc_data[, 10]
+valence
+
+barplot(
+  sort(colSums(prop.table(nrc_data[, 1:10]))), 
+  horiz = TRUE, 
+  cex.names = 0.7, 
+  las = 1, 
+  main = "Emotions in Sample text", xlab="Percentage"
+)
+
+a=sum(nrc_data$anger)/length(nrc_data$anger)*100
+a=round(a,1)
+s=sum(nrc_data$sadness)/length(nrc_data$sadness)*100
+s=round(s,1)
+f=sum(nrc_data$fear)/length(nrc_data$fear)*100
+f=round(f,1)
+an=sum(nrc_data$anticipation)/length(nrc_data$anticipation)*100
+an=round(an,1)
+t=sum(nrc_data$trust)/length(nrc_data$trust)*100
+t=round(t,1)
+j=sum(nrc_data$joy)/length(nrc_data$joy)*100
+j=round(j,1)
+su=sum(nrc_data$surprise)/length(nrc_data$surprise)*100
+su=round(su,1)
+d=sum(nrc_data$disgust)/length(nrc_data$disgust)*100
+d=round(d,1)
+p=sum(nrc_data$positive)/length(nrc_data$positive)*100
+p=round(p,1)
+n=sum(nrc_data$negative)/length(nrc_data$negative)*100
+n=round(n,1)
+```
+
+```{r multiple sentiments}
+#Output=round(c(a,d,su,j,s,an, f,t,n,p),1)
+Output=c(a,d,su,j,s,an, f,t,n,p)
+
+df<-data.frame(
+  Output=Output,
+  Sentiments=c("anger","disgust","surprise", "joy", "sadness",  "anticipation","fear","trust","negative", "positive") 
+  #levels=Output
+  #ordered=Output
+  )
+
+library(ggplot2)
+p<-ggplot(df,aes(x=Sentiments,y=Output,fill=Sentiments))+geom_bar(colour="black",stat="identity")+labs(y="Responses (%)") #+ggtitle(" Sentiments expressed in response to North American Campaign")
+p
+
+tiff("Figure.tiff", width = 8, height = 6, units = 'in', res = 300, compression = 'none')
+p
+dev.off()
+
+
+#rotate x axis label by 45
+p+theme(axis.title.y = element_text(face="bold", colour="#990000", size=12),axis.title.x = element_text(face="bold", colour="#990000", size=12), axis.text.x  = element_text(angle=45, vjust=0.5, size=12))
+
+```
+
+#data table
+```{r datatable}
+#library(DT)
+#df<-merge(s_v,nrc_data)
+#datatable(df)
+```
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
