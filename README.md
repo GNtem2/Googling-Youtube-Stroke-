@@ -1,5 +1,7 @@
 # Googling-Youtube-Stroke-
 
+This is a project evaluating the Youtube campaigns for raising public awareness of the signs of stroke. The 5 Australian campaigns have only received 1 comment. By contrast, the examplar campaign "Stroke Heroes Act Fast" had received more comments. These comments were extracted from Youtube. Sentiment analysis was performed on these comments. The results hvae been accepted for publication in Internal Medicine Journal.
+
 Stroke Foundation campaigns
 
 https://www.youtube.com/watch?v=xK1Qf0MTIRU #2009 
